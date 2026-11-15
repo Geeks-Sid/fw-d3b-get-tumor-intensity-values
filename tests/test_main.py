@@ -52,3 +52,33 @@ def test_fractional_intensities_are_not_rounded(make_inputs):
 
     assert info["enhancing_mean"] == pytest.approx(0.4)
     assert info["enhancing_median"] == pytest.approx(0.4)
+
+
+def test_zero_intensity_voxels_inside_the_mask_are_counted(make_inputs):
+    """Only the mask decides membership; a 0-valued voxel is still tumor."""
+    image = np.zeros(SHAPE)
+    seg = np.zeros(SHAPE)
+    image[0, 0, :4] = [0, 0, 10, 20]
+    seg[0, 0, :4] = 2
+
+    info = run(*make_inputs(image, seg))["info"]["TumorSegIntensity"]
+
+    assert info["nonenhancing_mean"] == pytest.approx(7.5)
+    assert info["nonenhancing_median"] == pytest.approx(5)
+
+
+def test_regions_use_their_own_labels(make_inputs):
+    """1=enhancing, 2=non-enhancing, 3=cyst, 4=edema, whole tumor=1+2+3 (no edema)."""
+    image = np.zeros(SHAPE)
+    seg = np.zeros(SHAPE)
+    image.flat[:5] = [10, 20, 30, 40, 1000]
+    seg.flat[:5] = [1, 2, 3, 4, 0]
+
+    info = run(*make_inputs(image, seg))["info"]["TumorSegIntensity"]
+
+    assert info["enhancing_mean"] == 10
+    assert info["nonenhancing_mean"] == 20
+    assert info["cyst_mean"] == 30
+    assert info["edema_mean"] == 40
+    assert info["wt_mean"] == pytest.approx(20)
+    assert info["wt_median"] == pytest.approx(20)
