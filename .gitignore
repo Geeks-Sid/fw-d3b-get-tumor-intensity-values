@@ -20,5 +20,12 @@ config.json
 config.json.back
 .input_map.json
 
+# Imaging data (potential PHI): never commit real scans or segmentations
+*.nii
+*.nii.gz
+*.dcm
+*.dicom.zip
+
 # Misc
 *.svs
+.pytest_cache
