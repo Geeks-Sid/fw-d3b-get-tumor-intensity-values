@@ -1,20 +1,11 @@
 """Main module."""
 import logging
-import os
-
-from fw_core_client import CoreClient
-from flywheel_gear_toolkit import GearToolkitContext
-import flywheel
-
-from .run_level import get_analysis_run_level_and_hierarchy
 
 import nibabel as nib
 import numpy as np
 
 log = logging.getLogger(__name__)
 
-fw_context = flywheel.GearContext()
-fw = fw_context.client
 
 def process(input_path, seg_filename):
     """Process `file_path` and returns a `flywheel.FileEntry` and its corresponding meta.

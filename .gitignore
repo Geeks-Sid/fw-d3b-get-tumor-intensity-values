@@ -22,3 +22,4 @@ config.json.back
 
 # Misc
 *.svs
+.pytest_cache
