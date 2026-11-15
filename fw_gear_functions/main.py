@@ -21,7 +21,6 @@ def process(input_path, seg_filename):
     file_dictionary = {'TumorSegIntensity':{}}
 
     im = nib.load(input_path).get_fdata()
-    im = np.rint(im)
 
     mask = nib.load(seg_filename).get_fdata()
     mask = np.rint(mask)

@@ -39,3 +39,16 @@ def test_run_works_outside_a_gear_container(make_inputs):
     assert info["enhancing_mean"] == pytest.approx(30)
     assert info["enhancing_median"] == pytest.approx(20)
     assert info["enhancing_stdev"] == pytest.approx(np.std([10, 20, 60]))
+
+
+def test_fractional_intensities_are_not_rounded(make_inputs):
+    """Statistics of e.g. normalised or ADC images must keep their decimals."""
+    image = np.zeros(SHAPE)
+    seg = np.zeros(SHAPE)
+    image[0, 0, :3] = [0.2, 0.4, 0.6]
+    seg[0, 0, :3] = 1
+
+    info = run(*make_inputs(image, seg))["info"]["TumorSegIntensity"]
+
+    assert info["enhancing_mean"] == pytest.approx(0.4)
+    assert info["enhancing_median"] == pytest.approx(0.4)
