@@ -82,3 +82,16 @@ def test_regions_use_their_own_labels(make_inputs):
     assert info["edema_mean"] == 40
     assert info["wt_mean"] == pytest.approx(20)
     assert info["wt_median"] == pytest.approx(20)
+
+
+def test_regions_without_voxels_are_reported_as_none(make_inputs):
+    """Explicit None lets create_metadata overwrite values from a previous run."""
+    image = np.ones(SHAPE)
+    seg = np.zeros(SHAPE)
+    seg[0, 0, 0] = 1
+
+    info = run(*make_inputs(image, seg))["info"]["TumorSegIntensity"]
+
+    assert info["enhancing_mean"] == 1
+    assert [info[f"{r}_{s}"] for r in ("cyst", "edema") for s in ("mean", "median", "stdev")] == [None] * 6
+    assert len(info) == 15

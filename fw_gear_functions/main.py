@@ -26,7 +26,8 @@ def process(input_path, seg_filename):
     Returns:
         dict: ``{"info": {"TumorSegIntensity": {...}}}`` holding
             ``<region>_mean``, ``<region>_median`` and ``<region>_stdev`` for
-            every region that contains at least one voxel.
+            every region in REGIONS. A region with no voxels gets ``None`` so a
+            value stored by an earlier run is overwritten, not left stale.
     """
     file_dictionary = {"TumorSegIntensity": {}}
     stats = file_dictionary["TumorSegIntensity"]
@@ -37,10 +38,12 @@ def process(input_path, seg_filename):
     for region, labels in REGIONS.items():
         voxels = im[np.isin(mask, labels)]
         if voxels.size == 0:
+            log.info(f"No {region.upper()} voxels (labels {labels}); statistics set to None")
+            stats.update({f"{region}_{s}": None for s in ("mean", "median", "stdev")})
             continue
-        stats[f"{region}_mean"] = np.mean(voxels)
-        stats[f"{region}_median"] = np.median(voxels)
-        stats[f"{region}_stdev"] = np.std(voxels)
+        stats[f"{region}_mean"] = float(np.mean(voxels))
+        stats[f"{region}_median"] = float(np.median(voxels))
+        stats[f"{region}_stdev"] = float(np.std(voxels))
         log.info(f"Added {region.upper()} statistics (labels {labels})")
 
     return {"info": file_dictionary}
