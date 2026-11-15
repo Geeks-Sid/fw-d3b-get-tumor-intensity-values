@@ -95,3 +95,50 @@ def test_regions_without_voxels_are_reported_as_none(make_inputs):
     assert info["enhancing_mean"] == 1
     assert [info[f"{r}_{s}"] for r in ("cyst", "edema") for s in ("mean", "median", "stdev")] == [None] * 6
     assert len(info) == 15
+
+
+def test_shape_mismatch_is_rejected(make_inputs):
+    """Broadcasting a differently-shaped mask must not silently produce numbers."""
+    with pytest.raises(ValueError, match="does not match segmentation shape"):
+        run(*make_inputs(np.ones(SHAPE), np.ones((4, 4, 5))))
+
+
+def test_nan_inside_a_region_is_rejected(make_inputs):
+    image = np.ones(SHAPE)
+    seg = np.zeros(SHAPE)
+    image[0, 0, 0] = np.nan
+    seg[0, 0, 0] = 1
+
+    with pytest.raises(ValueError, match="NaN/Inf"):
+        run(*make_inputs(image, seg))
+
+
+def test_nan_outside_every_region_is_ignored(make_inputs):
+    image = np.ones(SHAPE)
+    seg = np.zeros(SHAPE)
+    image[3, 3, 3] = np.nan
+    seg[0, 0, 0] = 1
+
+    assert run(*make_inputs(image, seg))["info"]["TumorSegIntensity"]["enhancing_mean"] == 1
+
+
+def test_empty_file_is_rejected(make_inputs, tmp_path):
+    _, seg_path = make_inputs(np.ones(SHAPE), np.ones(SHAPE))
+    empty = tmp_path / "empty.nii.gz"
+    empty.touch()
+
+    with pytest.raises(ValueError, match="File is empty"):
+        run(str(empty), seg_path)
+
+
+def test_unexpected_labels_and_affine_mismatch_are_logged(make_inputs, caplog):
+    seg = np.zeros(SHAPE)
+    seg[0, 0, 0] = 1
+    seg[0, 0, 1] = 7
+    shifted = np.eye(4)
+    shifted[0, 3] = 5
+
+    run(*make_inputs(np.ones(SHAPE), seg, affine=shifted))
+
+    assert "unexpected segmentation labels: [7.0]" in caplog.text
+    assert "affines differ" in caplog.text
